@@ -1,0 +1,142 @@
+html {
+    background-color: #0a1420;
+}
+
+div.tv-loader {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    margin: 18px auto;
+    animation-delay: -0.25s !important;
+
+    &,
+    &::before,
+    &::after {
+        width: 12px;
+        height: 12px;
+        border: 2px solid #8c939c;
+        border-radius: 50%;
+        background: #0d1c2b;
+        animation-fill-mode: both;
+        animation: tv-loader 1.5s infinite ease-in-out;
+    }
+
+    &::before,
+    &::after {
+        content: "";
+        position: absolute;
+        top: -2px;
+    }
+
+    &::before {
+        left: -22px;
+        animation-delay: -0.5s;
+    }
+
+    &::after {
+        left: 18px;
+    }
+
+    @keyframes tv-loader {
+
+        0%,
+        20%,
+        80%,
+        to {
+            background-color: #0d1c2b;
+        }
+
+        50% {
+            background-color: #8c939c;
+        }
+    }
+}
+
+div.tv-app {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: auto;
+    z-index: 1;
+
+    &.tv-active {
+        z-index: 3;
+    }
+}
+
+/* #app,
+div.tv-app {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: auto;
+    z-index: 2;
+
+    &.tv-enter {
+        z-index: 3;
+        opacity: 1;
+        transform: none;
+        border-radius: 0;
+        $tv-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
+        animation: 0 linear 0.2s backwards tv-enter-1, 0.6s $tv-enter-ease 0.2s backwards tv-enter-2, 2s $tv-enter-ease 0.2s backwards tv-enter-3;
+
+        @keyframes tv-enter-1 {
+            0% {
+                pointer-events: none;
+            }
+
+            1% {
+                pointer-events: all;
+            }
+        }
+
+        @keyframes tv-enter-2 {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+        }
+
+        @keyframes tv-enter-3 {
+            0% {
+                border-radius: 40px;
+                overflow: hidden;
+            }
+
+            100% {
+                overflow: hidden;
+            }
+        }
+    }
+} */
+
+div.tv-image-stage {
+    width: auto !important;
+    max-width: none !important;
+    display: inline-block;
+    overflow: hidden;
+    font-size: 0;
+    margin-top: 10px !important;
+}
+
+div.tv-app-utils {
+    position: relative;
+    z-index: 10;
+    width: 0;
+    height: 0;
+}
+
+div.tv-app-assets {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: auto;
+    z-index: 10;
+    background: #0a1420;
+}

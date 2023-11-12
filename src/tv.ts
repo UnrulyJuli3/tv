@@ -189,8 +189,8 @@ export class TV {
         const contentReplacements = text
             .replace(/new [A-Za-z0-9_$]+\.WSClient\(/g, "window.tv.client=$&")
             .replace(/^\/\/\# sourceMappingURL=.*$/m, "")
-            .replace(`"#app"`, `"#${appId}"`)
-            .replaceAll("location.reload(", "tv.reload(");
+            .replace(`"#app"`, `"#${appId}"`);
+        // .replaceAll("location.reload(", "tv.reload(");
 
         this.onRegister = () => {
             delete this.onRegister;

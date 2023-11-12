@@ -6,8 +6,8 @@ export const replaceConnectContent = (content: string) => {
     if (window.location.pathname.toLowerCase().includes("/audience")) content = content
         .replace("return this.isReconnectable?", "return false?")
         .replaceAll(`"ACTION.PLAY"`, `"SUBMIT.JOIN_AUDIENCE"`)
-        .replaceAll(`joinAs:"player"`, `joinAs:"audience"`);
-    // .replace(`"STATUS.ROOM_NOT_FOUND":""`, `"STATUS.ROOM_NOT_FOUND":"",joinAs:"audience"`);
+        .replaceAll(`joinAs:"player"`, `joinAs:"audience"`)
+        .replace(`"STATUS.ROOM_NOT_FOUND":""`, `"STATUS.ROOM_NOT_FOUND":"",joinAs:"audience"`);
 
     return content;
 };

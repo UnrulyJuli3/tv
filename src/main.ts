@@ -26,28 +26,9 @@ TV.create().then(tv => {
     };
 
     (window as any).tv = proxy;
-    (window as any).gtag = () => { };
 
-    // createApp(TVApp).mount("#app");
-
-    window.XMLHttpRequest = class extends XMLHttpRequest {
-        private prevent: boolean = false;
-
-        open(method: string, url: string | URL): void;
-        open(method: string, url: string | URL, async: boolean, username?: string | null | undefined, password?: string | null | undefined): void;
-        open(method: unknown, url: unknown, async?: unknown, username?: unknown, password?: unknown): void {
-            if (typeof url == "string" || url instanceof URL) {
-                const mainUrl = new URL(url);
-                if (mainUrl.hostname === "api-js.mixpanel.com") this.prevent = true;
-            }
-            // @ts-ignore
-            super.open(...arguments);
-        }
-
-        send(body?: Document | XMLHttpRequestBodyInit | null | undefined): void {
-            if (this.prevent) return;
-            super.send(body);
-        }
+    (window as any).gtag = (type: string, eventName: string, params: any) => {
+        if (type === "event") console.log(`[gtag] ${eventName}`, params);
     };
 
     setupStorage();
@@ -100,10 +81,10 @@ TV.create().then(tv => {
 
     const router = new Router(tv, routes);
 
-    proxy.reload = () => {
+    /* proxy.reload = () => {
         proxy.client?.disconnect();
         delete proxy.client;
         router.resolve();
         // window.location.reload();
-    };
+    }; */
 });

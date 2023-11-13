@@ -1,8 +1,13 @@
 import { replaceScriptContent } from "./content";
+import { Mods } from "./mods";
 import { setupStorage } from "./storage";
 import { replaceStyleContent } from "./style";
 import { IManifest } from "./types";
 // import { createUtils } from "./utils/create";
+import * as acorn from "acorn";
+import * as walk from "acorn-walk";
+import * as escodegen from "escodegen";
+import * as csstree from "css-tree";
 
 interface IRegisterOptions {
     connect?: (e: any, r?: any) => Promise<any>;
@@ -168,16 +173,45 @@ export class TV {
         /* this.lastApp = this.app;
         this.app = app; */
 
+        const rep = Mods.getReplacementsForApp(options.app);
+
         this.prefetched = await Promise.all(bundle.css.map(async file => {
             const stylePath = new URL(`/${bundle.base}/${file}?t=${Date.now()}`, TV.base),
                 res = await fetch(stylePath),
                 text = await res.text();
 
-            const contentReplacements = text
-                .replace("#app", `#${appId}`);
+            const ast = csstree.parse(text);
+
+            csstree.walk(ast, node => {
+                switch (node.type) {
+                    case "IdSelector": {
+                        if (node.name === "app") node.name = appId;
+                        break;
+                    }
+                    case "Url": {
+                        try {
+                            const url = new URL(node.value),
+                                start = `/${bundle.base}/assets/`;
+
+                            if (url.origin === TV.base && url.pathname.startsWith(start)) {
+                                const key = url.pathname.replace(start, "");
+                                if (rep.assets.has(key)) {
+                                    node.value = rep.assets.get(key)!;
+                                }
+                                return;
+                            }
+                        } catch (e) {
+
+                        }
+                        break;
+                    }
+                }
+            });
+
+            const finalStyle = csstree.generate(ast);
 
             // this.prefetchStyle(replaceStyleContent(options.app, contentReplacements));
-            return replaceStyleContent(options.app, contentReplacements);
+            return replaceStyleContent(options.app, finalStyle);
         }));
 
         // bundle.css.forEach(file => this.prefetchStyle(new URL(`/${bundle.base}/${file}`, TV.base).href));
@@ -188,9 +222,100 @@ export class TV {
 
         const contentReplacements = text
             .replace(/new [A-Za-z0-9_$]+\.WSClient\(/g, "window.tv.client=$&")
-            .replace(/^\/\/\# sourceMappingURL=.*$/m, "")
-            .replace(`"#app"`, `"#${appId}"`);
+            .replace(/^\/\/\# sourceMappingURL=.*$/m, "");
+        // .replace(`"#app"`, `"#${appId}"`);
         // .replaceAll("location.reload(", "tv.reload(");
+
+        const tree = acorn.parse(contentReplacements, {
+            ecmaVersion: "latest",
+            sourceType: "module",
+        });
+
+        const domParser = new DOMParser();
+
+        walk.simple(tree, {
+            TemplateLiteral(node) {
+                if (node.quasis.length === 1) {
+                    const quasi = node.quasis[0];
+                    const doc = domParser.parseFromString(quasi.value.raw, "text/html");
+                    if (doc.body.querySelector("*")) {
+                        let flag: boolean = false;
+
+                        doc.body.querySelectorAll("*").forEach(element => {
+                            for (let i = 0; i < element.attributes.length; i++) {
+                                const item = element.attributes.item(i);
+                                if (item && ["placeholder"].includes(item.name) && rep.strings.has(item.value)) {
+                                    item.value = rep.strings.get(item.value)!;
+                                    flag = true;
+                                }
+                            }
+                        });
+
+                        doc.body.querySelectorAll("button.pure-button").forEach(button => {
+                            button.childNodes.forEach(bnode => {
+                                const tester = bnode.textContent?.trim();
+                                if (tester && rep.strings.has(tester)) {
+                                    bnode.textContent = rep.strings.get(tester)!;
+                                    flag = true;
+                                }
+                            });
+                        });
+
+                        if (flag) quasi.value.raw = doc.body.innerHTML.replace(/&lt;%=/g, "<%=").replace(/%&gt;/g, "%>");
+                    }
+                }
+            },
+            Literal(node) {
+                if (typeof node.value == "string") {
+                    if (node.value === "#app") {
+                        node.value = `#${appId}`;
+                        return;
+                    }
+
+                    if (rep.strings.has(node.value)) {
+                        node.value = rep.strings.get(node.value)!;
+                        return;
+                    }
+
+                    try {
+                        const url = new URL(node.value),
+                            start = `/${bundle.base}/assets/`;
+
+                        if (url.origin === TV.base && url.pathname.startsWith(start)) {
+                            const key = url.pathname.replace(start, "");
+                            if (rep.assets.has(key)) {
+                                node.value = rep.assets.get(key)!;
+                            }
+                            return;
+                        }
+                    } catch (e) { }
+                }
+            },
+        });
+
+        replaceScriptContent(options.app, tree);
+
+        const finalScript = escodegen.generate(tree, {
+            format: {
+                indent: {
+                    style: "",
+                    // base: 0,
+                },
+                renumber: true,
+                hexadecimal: true,
+                quotes: "double",
+                // escapeless: true,
+                compact: true,
+                parentheses: false,
+                semicolons: false,
+            },
+        });
+
+        /* console.log(escodegen.generate(tree, {
+            format: {
+                quotes: "double",
+            },
+        })); */
 
         this.onRegister = () => {
             delete this.onRegister;
@@ -201,7 +326,7 @@ export class TV {
             }
         };
 
-        this.loadScript(replaceScriptContent(options.app, contentReplacements));
+        this.loadScript(finalScript);
     };
 
     public connect = async (e: any, r?: any) => {

@@ -4,6 +4,7 @@ import "./tv.style.css";
 import { setupStorage } from "./storage";
 import { createAssetsView } from "./assetsview/create";
 import { IRoute, Router } from "./router";
+import { Mods } from "./mods";
 // import { createApp } from "vue";
 // import TVApp from "./tv/App.vue";
 
@@ -13,7 +14,9 @@ const loader = document.createElement("div");
 loader.className = "tv-loader";
 document.body.append(loader);
 
-TV.create().then(tv => {
+TV.create().then(async tv => {
+    await Mods.load();
+
     window.document.querySelectorAll("style").forEach(style => style.setAttribute("data-tv-source", ""));
     // console.log(`Loaded manifest (${Object.keys(tv.manifest.branches).join(", ")})`);
 
@@ -50,10 +53,10 @@ TV.create().then(tv => {
             path: "/moderator",
             load: "@moderator",
         },
-        {
+        /* {
             path: "/moderator/hj",
             load: "@moderator",
-        },
+        }, */
         {
             path: "/assets",
             handler: () => {

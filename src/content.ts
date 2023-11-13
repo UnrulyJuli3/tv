@@ -1,10 +1,9 @@
+import { Program } from "acorn";
 import { replaceConnectContent, replaceModeratorContent } from "./contentRoot";
 
-export const replaceScriptContent = (app: string, content: string) => {
+export const replaceScriptContent = (app: string, root: Program) => {
     switch (app) {
-        case "@connect": return replaceConnectContent(content);
-        case "@moderator": return replaceModeratorContent(content);
+        case "@connect": replaceConnectContent(root); break;
+        case "@moderator": replaceModeratorContent(root); break;
     }
-
-    return content;
 };

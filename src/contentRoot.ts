@@ -1,108 +1,94 @@
-export const replaceConnectContent = (content: string) => {
-    content = content
-        .replaceAll("yn2iepd23vskpmkzgeg2lkfsct7gsc", "rz0ifcpc6hxhv2v8kgw8pta4mw848b")
-        .replaceAll("http://localhost:9090/", "http://localhost:5173/");
+import { Literal, Program } from "acorn";
+import * as walk from "acorn-walk";
+import * as escodegen from "escodegen";
 
-    if (window.location.pathname.toLowerCase().includes("/audience")) content = content
-        .replace("return this.isReconnectable?", "return false?")
-        .replaceAll(`"ACTION.PLAY"`, `"SUBMIT.JOIN_AUDIENCE"`)
-        .replaceAll(`joinAs:"player"`, `joinAs:"audience"`)
-        .replace(`"STATUS.ROOM_NOT_FOUND":""`, `"STATUS.ROOM_NOT_FOUND":"",joinAs:"audience"`);
+const updateGames = (root: Program) => {
+    /* walk.simple(root, {
+        ArrayExpression(node) {
+            if (node.elements.length && node.elements.every(element => element?.type === "ObjectExpression" && element.properties.some(prop => prop.type === "Property" && prop.key.type === "Identifier" && prop.key.name === "isPublic"))) {
+                for (const element of node.elements) {
+                    if (element?.type === "ObjectExpression") {
+                        for (const prop of element.properties) {
+                            if (prop.type === "Property" && prop.key.type === "Identifier") {
+                                if (prop.key.name === "name") {
+                                    prop.value = {
+                                        start: 0, end: 0,
+                                        type: "Literal",
+                                        value: "foo",
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
 
-    return content;
+                const list: any[] = new Function(`return ${escodegen.generate(node)}`)();
+                console.log(list);
+            }
+        },
+    }); */
 };
 
-export const replaceModeratorContent = (content: string) => {
-    if (window.location.pathname.toLowerCase().includes("/hj")) {
-        /* const res = await getGamesList(content);
-        if (res) {
-            content = res.replace(res.list.map((game: any) => {
-                if (!game.features) game.features = ["moderation"];
-                else if (!game.features.includes("moderation")) game.features.push("moderation");
-                return game;
-            }));
-        } */
+export const replaceConnectContent = (root: Program) => {
+    updateGames(root);
 
-        let squiggleIndent: number = 0,
-            bracketIndent: number = 0,
-            build: string = "",
-            hasGamesList: boolean = false,
-            gamesListIndent: number = -1,
-            gamesListChar: number = -1,
-            hasMounted: boolean = false,
-            mountedAtIndent: number = -1,
-            mountedAtChar: number = -1;
+    const forceAudience = /^\/audience/i.test(window.location.pathname);
 
-        for (let i = 0; i < content.length; i++) {
-            const char = content.charAt(i);
-            build += char;
-            switch (char) {
-                case "[":
-                    bracketIndent++;
-                    if (!hasGamesList) {
-                        gamesListChar = i;
-                        build = "[";
-                    }
-                    break;
-                case "]":
-                    bracketIndent--;
-                    if (hasGamesList) {
-                        if (bracketIndent < gamesListIndent) {
-                            // console.log(build);
-                            const replace = (newText: string) => {
-                                content = content.slice(0, gamesListChar) + newText + content.slice(i + 1);
-                                i += newText.length - build.length;
-                            };
-                            const list: any[] = new Function(`return ${build}`)();
-                            replace(JSON.stringify(list.map((game: any) => {
-                                if (!game.features) game.features = ["moderation"];
-                                else if (!game.features.includes("moderation")) game.features.push("moderation");
-                                return game;
-                            })));
-                            build = "";
-                            hasGamesList = false;
-                        }
-                    } else {
-                        build = "";
-                    }
-                    break;
-                case "{":
-                    squiggleIndent++;
-                    if (build.endsWith("mounted(){")) {
-                        hasMounted = true;
-                        mountedAtIndent = squiggleIndent;
-                        mountedAtChar = i;
-                        build = "";
-                    }
-                    break;
-                case "}":
-                    squiggleIndent--;
-                    if (hasMounted && squiggleIndent < mountedAtIndent) {
-                        const replace = (newText: string) => {
-                            content = content.slice(0, mountedAtChar + 1) + newText + content.slice(i + 1);
-                            i += newText.length - build.length;
-                        };
-                        if (build.includes("this.$refs.stage") && build.includes("parseLines(this.item.value.lines)")) {
-                            replace(`if(this.item.value.image){const image=new Image();image.src=this.item.value.image;this.$refs.stage.append(image);this.$refs.stage.classList.add("tv-image-stage")}else{${build}}`);
-                        }
-                        hasMounted = false;
-                    }
-                    break;
-                default:
-                    /* if (!hasGamesList && build.includes("isPublic:!")) {
-                        hasGamesList = true;
-                        gamesListIndent = bracketIndent;
-                        console.log(build);
-                    } */
-                    // if (!hasGamesList) console.log(build);
-                    if (!hasGamesList && build.includes("isPublic:!")) {
-                        hasGamesList = true;
-                        gamesListIndent = bracketIndent;
-                    }
-                // await new Promise(resolve => window.requestAnimationFrame(resolve));
+    walk.simple(root, {
+        Literal(node) {
+            if (typeof node.value == "string") {
+                switch (node.value) {
+                    case "yn2iepd23vskpmkzgeg2lkfsct7gsc":
+                        node.value = "rz0ifcpc6hxhv2v8kgw8pta4mw848b";
+                        break;
+                    case "http://localhost:9090/":
+                        node.value = "http://localhost:5173/";
+                        break;
+                }
+
+                if (forceAudience) {
+                    if (node.value === "ACTION.PLAY") node.value = "SUBMIT.JOIN_AUDIENCE";
+                }
             }
-        }
-    }
+        },
+        Property(node) {
+            if (forceAudience &&
+                node.key.type === "Identifier" &&
+                node.key.name === "joinAs" &&
+                node.value.type === "Literal" &&
+                node.value.value === "player") {
+                node.value.value = "audience";
+            }
+        },
+        ObjectExpression(node) {
+            if (forceAudience &&
+                node.properties.some(prop => prop.type === "Property" && prop.key.type === "Identifier" && prop.key.name === "statusKey") &&
+                !node.properties.some(prop => prop.type === "Property" && prop.key.type === "Identifier" && prop.key.name === "joinAs")) {
+                node.properties.push({
+                    start: 0, end: 0,
+                    type: "Property",
+                    key: { start: 0, end: 0, type: "Identifier", name: "joinAs" },
+                    value: { start: 0, end: 0, type: "Literal", value: "audience" },
+                    kind: "init",
+                    method: false,
+                    shorthand: false,
+                    computed: false,
+                });
+            }
+        },
+        ReturnStatement(node) {
+            if (forceAudience &&
+                node.argument?.type === "ConditionalExpression" &&
+                node.argument.test.type === "MemberExpression" &&
+                node.argument.test.object.type === "ThisExpression" &&
+                node.argument.test.property.type === "Identifier" &&
+                node.argument.test.property.name === "isReconnectable") {
+                node.argument = node.argument.alternate;
+            }
+        },
+    });
+};
 
-    return content;
+export const replaceModeratorContent = (root: Program) => {
+    updateGames(root);
 };

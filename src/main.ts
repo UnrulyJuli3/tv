@@ -5,6 +5,7 @@ import { setupStorage } from "./storage";
 import { createAssetsView } from "./assetsview/create";
 import { IRoute, Router } from "./router";
 import { Mods } from "./mods";
+import { createManifestView } from "./manifestView/create";
 // import { createApp } from "vue";
 // import TVApp from "./tv/App.vue";
 
@@ -61,6 +62,12 @@ TV.create().then(async tv => {
             path: "/assets",
             handler: () => {
                 createAssetsView();
+            },
+        },
+        {
+            path: "/manifest",
+            handler: () => {
+                createManifestView();
             },
         },
         {

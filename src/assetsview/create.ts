@@ -1,4 +1,5 @@
 import { createApp } from "vue";
+
 import AssetsView from "./AssetsView.vue";
 
 export const createAssetsView = () => {
